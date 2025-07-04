@@ -8,7 +8,7 @@ A Model Context Protocol (MCP) server for Todoist, enabling advanced task and pr
 - Node.js (v18 or higher recommended)
 - npm or yarn
 - A Todoist account
-- A Todoist API token (see https://todoist.com/prefs/integrations)
+- Nango authentication setup (see Configuration section)
 
 ## Features
 - List, create, update, complete, reopen, and delete tasks
@@ -27,6 +27,31 @@ A Model Context Protocol (MCP) server for Todoist, enabling advanced task and pr
 - **Comments**: List (by task/project), get, create, update, delete
 - **Collaborators**: List project collaborators
 
+## Configuration
+
+This server uses Nango for authentication. You'll need to set up the following environment variables:
+
+```bash
+# Nango Configuration
+NANGO_CONNECTION_ID=your_connection_id_here
+NANGO_INTEGRATION_ID=your_integration_id_here
+NANGO_BASE_URL=https://api.nango.dev
+NANGO_SECRET_KEY=your_secret_key_here
+```
+
+Create a `.env` file in the project root with these values, or set them as environment variables.
+
+### Setting up Nango Authentication
+
+1. **Create a Nango Account**: Sign up at [nango.dev](https://nango.dev)
+2. **Configure Todoist Integration**: Set up Todoist as an integration in your Nango dashboard
+3. **Get Your Credentials**: 
+   - `NANGO_CONNECTION_ID`: Your specific connection ID for Todoist
+   - `NANGO_INTEGRATION_ID`: Your integration/provider config key
+   - `NANGO_SECRET_KEY`: Your Nango secret key
+   - `NANGO_BASE_URL`: Usually `https://api.nango.dev`
+4. **Complete OAuth Flow**: Use Nango's OAuth flow to authenticate with Todoist
+
 ## Installation
 
 ### For Claude Desktop (JSON)
@@ -41,13 +66,15 @@ If published as an npm package, you can use it directly with npx in your Claude 
         "todoist-mcp"
       ],
       "env": {
-        "TODOIST_API_TOKEN": "your_todoist_token"
+        "NANGO_CONNECTION_ID": "your_connection_id",
+        "NANGO_INTEGRATION_ID": "your_integration_id", 
+        "NANGO_BASE_URL": "https://api.nango.dev",
+        "NANGO_SECRET_KEY": "your_secret_key"
       }
     }
   }
 }
 ```
-- Set the `TODOIST_API_TOKEN` as shown.
 
 ### Manual Installation
 1. Clone the repository:
@@ -67,7 +94,7 @@ If published as an npm package, you can use it directly with npx in your Claude 
    # or
    yarn build
    ```
-4. Set your Todoist API token as an environment variable (see above).
+4. Set your Nango environment variables (see Configuration section above).
 5. Run the built server:
    ```sh
    node dist/server.js
@@ -82,7 +109,10 @@ If published as an npm package, you can use it directly with npx in your Claude 
            "/path/to/todoist-mcp/dist/server.js"
          ],
          "env": {
-           "TODOIST_API_TOKEN": "your_todoist_token"
+           "NANGO_CONNECTION_ID": "your_connection_id",
+           "NANGO_INTEGRATION_ID": "your_integration_id", 
+           "NANGO_BASE_URL": "https://api.nango.dev",
+           "NANGO_SECRET_KEY": "your_secret_key"
          }
        }
      }
@@ -103,5 +133,28 @@ If published as an npm package, you can use it directly with npx in your Claude 
 - **Comment management:**
   > "Add a comment to the task 'Prepare slides' with the content 'Remember to include Q2 results.'"
 
+## Development
+
+### Running in Development Mode
+```sh
+npm run dev
+# or
+yarn dev
+```
+
+### Building for Production
+```sh
+npm run build
+# or
+yarn build
+```
+
+## Authentication Notes
+
+- The server automatically handles token refresh through Nango
+- If tokens expire, they will be refreshed automatically
+- All API calls use fresh tokens to ensure reliability
+- Error handling includes authentication failure recovery
+
 ## License
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details. 
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
