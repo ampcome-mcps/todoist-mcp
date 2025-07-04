@@ -7,12 +7,15 @@
     "todoist-mcp-server": "./dist/server.js"
   },
   "files": [
-    "dist",
-    "smithery.yaml"
+    "dist/**/*",
+    "src/**/*",
+    "smithery.yaml",
+    "tsconfig.json"
   ],
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
+    "postinstall": "npm run build",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "test": "node dist/server.js"
