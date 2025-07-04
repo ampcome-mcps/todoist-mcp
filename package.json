@@ -1,7 +1,7 @@
 {
   "name": "todoist-mcp-server",
   "version": "1.0.7",
-  "description": "MCP server for Todoist API",
+  "description": "MCP server for Todoist API with Nango authentication",
   "main": "dist/server.js",
   "bin": {
     "todoist-mcp-server": "./dist/server.js"
@@ -14,7 +14,8 @@
     "build": "tsc",
     "prepublishOnly": "npm run build",
     "start": "node dist/server.js",
-    "dev": "ts-node src/server.ts"
+    "dev": "ts-node src/server.ts",
+    "test": "node dist/server.js"
   },
   "homepage": "https://github.com/stevengonsalvez/todoist-mcp",
   "repository": {
@@ -32,7 +33,9 @@
     "claude",
     "task-management",
     "productivity",
-    "api"
+    "api",
+    "nango",
+    "oauth"
   ],
   "license": "MIT",
   "dependencies": {

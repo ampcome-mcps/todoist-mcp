@@ -130,12 +130,12 @@ async function initializeTodoistApi(): Promise<void> {
     try {
         const accessToken = await getAccessToken();
         todoistApi = new TodoistApi(accessToken);
-        console.error('Todoist API initialized with Nango authentication');
+        console.error('✅ Todoist API initialized with Nango authentication');
     } catch (error) {
-        console.error('Failed to initialize Todoist API with Nango:', error);
+        console.error('❌ Failed to initialize Todoist API with Nango:', error);
         console.error('Please ensure all Nango environment variables are set correctly:');
         console.error('- NANGO_CONNECTION_ID');
-        console.error('- NANGO_INTEGRATION_ID');
+        console.error('- NANGO_INTEGRATION_ID'); 
         console.error('- NANGO_BASE_URL');
         console.error('- NANGO_SECRET_KEY');
         process.exit(1);
@@ -145,7 +145,7 @@ async function initializeTodoistApi(): Promise<void> {
 // Create the MCP server
 const server = new McpServer({
     name: "Todoist MCP Server",
-    version: "1.0.0"
+    version: "1.0.7"
 });
 
 // Tasks
@@ -177,26 +177,6 @@ server.tool(
 );
 
 server.tool(
-    "getTask",
-    {
-        description: "Get details of a specific task by its ID.",
-        taskId: z.string().describe("The ID of the task to retrieve")
-    },
-    async ({ taskId }) => {
-        try {
-            const task = await todoistApi.getTask(taskId);
-            return { content: [{ type: "text", text: JSON.stringify({ task }, null, 2) }] };
-        } catch (error) {
-            console.error('Error fetching task:', error);
-            return {
-                content: [{ type: "text", text: "Failed to fetch task" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
     "createTask",
     {
         description: "Create a new task in Todoist with various optional parameters.",
@@ -205,13 +185,6 @@ server.tool(
         dueString: z.string().optional().describe("Due date in natural language (e.g., 'today', 'tomorrow', 'next Monday')"),
         priority: z.number().optional().describe("Priority level (1-4, where 4 is highest)"),
         labels: z.array(z.string()).optional().describe("Array of label names to assign to the task"),
-        order: z.number().optional().describe("Position in the project"),
-        parentId: z.string().optional().describe("Parent task ID to create a subtask"),
-        sectionId: z.string().optional().describe("Section ID within the project"),
-        assigneeId: z.string().optional().describe("User ID to assign the task to"),
-        dueLang: z.string().optional().describe("Language for due date parsing"),
-        dueDate: z.string().optional().describe("Due date in YYYY-MM-DD format"),
-        dueDatetime: z.string().optional().describe("Due date with time in RFC3339 format")
     },
     async (params) => {
         try {
@@ -224,19 +197,6 @@ server.tool(
             if (params.priority) taskArgs.priority = params.priority;
             if (params.labels) taskArgs.labels = params.labels;
             if (params.description) taskArgs.description = params.description;
-            if (params.order) taskArgs.order = params.order;
-            if (params.parentId) taskArgs.parentId = params.parentId;
-            if (params.sectionId) taskArgs.sectionId = params.sectionId;
-            if (params.assigneeId) taskArgs.assigneeId = params.assigneeId;
-            if (params.dueLang) taskArgs.dueLang = params.dueLang;
-
-            if (params.dueString) {
-                taskArgs.dueString = params.dueString;
-            } else if (params.dueDate) {
-                taskArgs.dueDate = params.dueDate;
-            } else if (params.dueDatetime) {
-                taskArgs.dueDatetime = params.dueDatetime;
-            }
 
             const task = await todoistApi.addTask(taskArgs);
             return { content: [{ type: "text", text: JSON.stringify({ task }, null, 2) }] };
@@ -244,52 +204,6 @@ server.tool(
             console.error('Error creating task:', error);
             return {
                 content: [{ type: "text", text: "Failed to create task" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "updateTask",
-    {
-        description: "Update an existing task with new information.",
-        taskId: z.string().describe("The ID of the task to update"),
-        content: z.string().optional().describe("New task content/title"),
-        labels: z.array(z.string()).optional().describe("New array of label names"),
-        priority: z.number().optional().describe("New priority level (1-4)"),
-        dueString: z.string().optional().describe("New due date in natural language"),
-        dueLang: z.string().optional().describe("Language for due date parsing"),
-        dueDate: z.string().optional().describe("New due date in YYYY-MM-DD format"),
-        dueDatetime: z.string().optional().describe("New due date with time in RFC3339 format"),
-        assigneeId: z.string().optional().describe("New assignee user ID")
-    },
-    async (params) => {
-        try {
-            const { taskId, ...updateParams } = params;
-            const taskArgs: any = {};
-
-            if (updateParams.content) taskArgs.content = updateParams.content;
-            if (updateParams.description) taskArgs.description = updateParams.description;
-            if (updateParams.labels) taskArgs.labels = updateParams.labels;
-            if (updateParams.priority) taskArgs.priority = updateParams.priority;
-            if ('assigneeId' in updateParams) taskArgs.assigneeId = updateParams.assigneeId;
-            if (updateParams.dueLang) taskArgs.dueLang = updateParams.dueLang;
-
-            if (updateParams.dueString) {
-                taskArgs.dueString = updateParams.dueString;
-            } else if (updateParams.dueDate) {
-                taskArgs.dueDate = updateParams.dueDate;
-            } else if (updateParams.dueDatetime) {
-                taskArgs.dueDatetime = updateParams.dueDatetime;
-            }
-
-            const success = await todoistApi.updateTask(taskId, taskArgs);
-            return { content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }] };
-        } catch (error) {
-            console.error('Error updating task:', error);
-            return {
-                content: [{ type: "text", text: "Failed to update task" }],
                 isError: true
             };
         }
@@ -310,46 +224,6 @@ server.tool(
             console.error('Error completing task:', error);
             return {
                 content: [{ type: "text", text: "Failed to complete task" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "reopenTask",
-    {
-        description: "Reopen a previously completed task.",
-        taskId: z.string().describe("The ID of the task to reopen")
-    },
-    async ({ taskId }) => {
-        try {
-            const result = await todoistApi.reopenTask(taskId);
-            return { content: [{ type: "text", text: JSON.stringify({ success: result }, null, 2) }] };
-        } catch (error) {
-            console.error('Error reopening task:', error);
-            return {
-                content: [{ type: "text", text: "Failed to reopen task" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "deleteTask",
-    {
-        description: "Permanently delete a task.",
-        taskId: z.string().describe("The ID of the task to delete")
-    },
-    async ({ taskId }) => {
-        try {
-            const result = await todoistApi.deleteTask(taskId);
-            return { content: [{ type: "text", text: JSON.stringify({ success: result }, null, 2) }] };
-        } catch (error) {
-            console.error('Error deleting task:', error);
-            return {
-                content: [{ type: "text", text: "Failed to delete task" }],
                 isError: true
             };
         }
@@ -377,436 +251,25 @@ server.tool(
 );
 
 server.tool(
-    "getProject",
-    {
-        description: "Get details of a specific project by its ID.",
-        projectId: z.string().describe("The ID of the project to retrieve")
-    },
-    async ({ projectId }) => {
-        try {
-            const project = await todoistApi.getProject(projectId);
-            return { content: [{ type: "text", text: JSON.stringify({ project }, null, 2) }] };
-        } catch (error) {
-            console.error('Error fetching project:', error);
-            return {
-                content: [{ type: "text", text: "Failed to fetch project" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
     "createProject",
     {
         description: "Create a new project in Todoist.",
         name: z.string().describe("The name of the project (required)"),
-        parentId: z.string().optional().describe("Parent project ID to create a sub-project"),
         color: z.string().optional().describe("Project color (e.g., 'red', 'blue', 'green')"),
-        isFavorite: z.boolean().optional().describe("Whether to mark as favorite"),
-        viewStyle: z.enum(['list', 'board']).optional().describe("Project view style")
+        isFavorite: z.boolean().optional().describe("Whether to mark as favorite")
     },
     async (params) => {
         try {
             const project = await todoistApi.addProject({
                 name: params.name,
-                parentId: params.parentId,
                 color: params.color,
-                isFavorite: params.isFavorite,
-                viewStyle: params.viewStyle,
+                isFavorite: params.isFavorite
             });
             return { content: [{ type: "text", text: JSON.stringify({ project }, null, 2) }] };
         } catch (error) {
             console.error('Error creating project:', error);
             return {
                 content: [{ type: "text", text: "Failed to create project" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "updateProject",
-    {
-        description: "Update an existing project.",
-        projectId: z.string().describe("The ID of the project to update"),
-        name: z.string().optional().describe("New project name"),
-        color: z.string().optional().describe("New project color"),
-        isFavorite: z.boolean().optional().describe("Whether to mark as favorite"),
-        viewStyle: z.enum(['list', 'board']).optional().describe("New project view style")
-    },
-    async (params) => {
-        try {
-            const { projectId, ...updateParams } = params;
-            const success = await todoistApi.updateProject(projectId, updateParams);
-            return { content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }] };
-        } catch (error) {
-            console.error('Error updating project:', error);
-            return {
-                content: [{ type: "text", text: "Failed to update project" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "archiveProject",
-    {
-        description: "Archive a project (hide it from active view).",
-        projectId: z.string().describe("The ID of the project to archive")
-    },
-    async ({ projectId }) => {
-        try {
-            const accessToken = await refreshTokenIfNeeded();
-            const response = await fetch(`https://api.todoist.com/rest/v2/projects/${projectId}/archive`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to archive project: ${response.statusText}`);
-            }
-
-            return { content: [{ type: "text", text: JSON.stringify({ success: true }, null, 2) }] };
-        } catch (error) {
-            console.error('Error archiving project:', error);
-            return {
-                content: [{ type: "text", text: "Failed to archive project" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "unarchiveProject",
-    {
-        description: "Unarchive a project (restore it to active view).",
-        projectId: z.string().describe("The ID of the project to unarchive")
-    },
-    async ({ projectId }) => {
-        try {
-            const accessToken = await refreshTokenIfNeeded();
-            const response = await fetch(`https://api.todoist.com/rest/v2/projects/${projectId}/unarchive`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to unarchive project: ${response.statusText}`);
-            }
-
-            return { content: [{ type: "text", text: JSON.stringify({ success: true }, null, 2) }] };
-        } catch (error) {
-            console.error('Error unarchiving project:', error);
-            return {
-                content: [{ type: "text", text: "Failed to unarchive project" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "deleteProject",
-    {
-        description: "Permanently delete a project and all its tasks.",
-        projectId: z.string().describe("The ID of the project to delete")
-    },
-    async ({ projectId }) => {
-        try {
-            const success = await todoistApi.deleteProject(projectId);
-            return { content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }] };
-        } catch (error) {
-            console.error('Error deleting project:', error);
-            return {
-                content: [{ type: "text", text: "Failed to delete project" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "getProjectCollaborators",
-    {
-        description: "Get the list of collaborators for a specific project.",
-        projectId: z.string().describe("The ID of the project to get collaborators for")
-    },
-    async ({ projectId }) => {
-        try {
-            const collaborators = await todoistApi.getProjectCollaborators(projectId);
-            return { content: [{ type: "text", text: JSON.stringify({ collaborators }, null, 2) }] };
-        } catch (error) {
-            console.error('Error fetching project collaborators:', error);
-            return {
-                content: [{ type: "text", text: "Failed to fetch project collaborators" }],
-                isError: true
-            };
-        }
-    }
-);
-
-// Sections
-server.tool(
-    "listSections",
-    {
-        description: "List sections within a project. Sections help organize tasks within projects.",
-        projectId: z.string().optional().describe("Project ID to get sections for (returns empty if not provided)")
-    },
-    async ({ projectId }) => {
-        try {
-            if (projectId) {
-                // @ts-ignore - Known issue with the type definitions
-                const sections = await todoistApi.getSections({ projectId });
-                return { content: [{ type: "text", text: JSON.stringify({ sections }, null, 2) }] };
-            } else {
-                return { content: [{ type: "text", text: JSON.stringify({ sections: [] }, null, 2) }] };
-            }
-        } catch (error) {
-            console.error('Error fetching sections:', error);
-            return {
-                content: [{ type: "text", text: "Failed to fetch sections" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "getSection",
-    {
-        description: "Get details of a specific section by its ID.",
-        sectionId: z.string().describe("The ID of the section to retrieve")
-    },
-    async ({ sectionId }) => {
-        try {
-            const section = await todoistApi.getSection(sectionId);
-            return { content: [{ type: "text", text: JSON.stringify({ section }, null, 2) }] };
-        } catch (error) {
-            console.error('Error fetching section:', error);
-            return {
-                content: [{ type: "text", text: "Failed to fetch section" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "createSection",
-    {
-        description: "Create a new section within a project.",
-        name: z.string().describe("The name of the section (required)"),
-        projectId: z.string().describe("The ID of the project to create the section in (required)"),
-        order: z.number().optional().describe("Position of the section in the project")
-    },
-    async (params) => {
-        try {
-            const section = await todoistApi.addSection({
-                name: params.name,
-                projectId: params.projectId,
-                order: params.order,
-            });
-            return { content: [{ type: "text", text: JSON.stringify({ section }, null, 2) }] };
-        } catch (error) {
-            console.error('Error creating section:', error);
-            return {
-                content: [{ type: "text", text: "Failed to create section" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "updateSection",
-    {
-        description: "Update the name of an existing section.",
-        sectionId: z.string().describe("The ID of the section to update"),
-        name: z.string().describe("The new name for the section")
-    },
-    async ({ sectionId, name }) => {
-        try {
-            const success = await todoistApi.updateSection(sectionId, { name });
-            return { content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }] };
-        } catch (error) {
-            console.error('Error updating section:', error);
-            return {
-                content: [{ type: "text", text: "Failed to update section" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "deleteSection",
-    {
-        description: "Delete a section (tasks in the section will be moved to the project's main area).",
-        sectionId: z.string().describe("The ID of the section to delete")
-    },
-    async ({ sectionId }) => {
-        try {
-            const success = await todoistApi.deleteSection(sectionId);
-            return { content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }] };
-        } catch (error) {
-            console.error('Error deleting section:', error);
-            return {
-                content: [{ type: "text", text: "Failed to delete section" }],
-                isError: true
-            };
-        }
-    }
-);
-
-// Comments
-server.tool(
-    "listComments",
-    {
-        description: "List comments for a specific task or project.",
-        taskId: z.string().optional().describe("Task ID to get comments for (either taskId or projectId required)"),
-        projectId: z.string().optional().describe("Project ID to get comments for (either taskId or projectId required)")
-    },
-    async (params) => {
-        try {
-            if (!params.taskId && !params.projectId) {
-                return {
-                    content: [{ type: "text", text: "Either taskId or projectId is required" }],
-                    isError: true
-                };
-            }
-
-            let comments;
-            if (params.taskId) {
-                comments = await todoistApi.getComments({ taskId: params.taskId });
-            } else if (params.projectId) {
-                comments = await todoistApi.getComments({ projectId: params.projectId });
-            }
-
-            return { content: [{ type: "text", text: JSON.stringify({ comments }, null, 2) }] };
-        } catch (error) {
-            console.error('Error fetching comments:', error);
-            return {
-                content: [{ type: "text", text: "Failed to fetch comments" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "getComment",
-    {
-        description: "Get details of a specific comment by its ID.",
-        commentId: z.string().describe("The ID of the comment to retrieve")
-    },
-    async ({ commentId }) => {
-        try {
-            const comment = await todoistApi.getComment(commentId);
-            return { content: [{ type: "text", text: JSON.stringify({ comment }, null, 2) }] };
-        } catch (error) {
-            console.error('Error fetching comment:', error);
-            return {
-                content: [{ type: "text", text: "Failed to fetch comment" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "createComment",
-    {
-        description: "Create a new comment on a task or project.",
-        content: z.string().describe("The comment content (required)"),
-        taskId: z.string().optional().describe("Task ID to comment on (either taskId or projectId required)"),
-        projectId: z.string().optional().describe("Project ID to comment on (either taskId or projectId required)"),
-        attachment: z.object({
-            fileName: z.string().optional().describe("Name of the attached file"),
-            fileUrl: z.string().describe("URL of the attached file"),
-            fileType: z.string().optional().describe("MIME type of the file"),
-            resourceType: z.string().optional().describe("Type of resource")
-        }).optional().describe("Optional file attachment")
-    },
-    async (params) => {
-        try {
-            if (!params.taskId && !params.projectId) {
-                return {
-                    content: [{ type: "text", text: "Either taskId or projectId is required" }],
-                    isError: true
-                };
-            }
-
-            const commentArgs: any = {
-                content: params.content
-            };
-
-            if (params.taskId) {
-                commentArgs.taskId = params.taskId;
-            } else if (params.projectId) {
-                commentArgs.projectId = params.projectId;
-            }
-
-            if (params.attachment) {
-                commentArgs.attachment = params.attachment;
-            }
-
-            const comment = await todoistApi.addComment(commentArgs);
-            return { content: [{ type: "text", text: JSON.stringify({ comment }, null, 2) }] };
-        } catch (error) {
-            console.error('Error creating comment:', error);
-            return {
-                content: [{ type: "text", text: "Failed to create comment" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "updateComment",
-    {
-        description: "Update the content of an existing comment.",
-        commentId: z.string().describe("The ID of the comment to update"),
-        content: z.string().describe("The new comment content")
-    },
-    async ({ commentId, content }) => {
-        try {
-            const success = await todoistApi.updateComment(commentId, { content });
-            return { content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }] };
-        } catch (error) {
-            console.error('Error updating comment:', error);
-            return {
-                content: [{ type: "text", text: "Failed to update comment" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "deleteComment",
-    {
-        description: "Delete a comment permanently.",
-        commentId: z.string().describe("The ID of the comment to delete")
-    },
-    async ({ commentId }) => {
-        try {
-            const success = await todoistApi.deleteComment(commentId);
-            return { content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }] };
-        } catch (error) {
-            console.error('Error deleting comment:', error);
-            return {
-                content: [{ type: "text", text: "Failed to delete comment" }],
                 isError: true
             };
         }
@@ -834,32 +297,11 @@ server.tool(
 );
 
 server.tool(
-    "getLabel",
-    {
-        description: "Get details of a specific label by its ID.",
-        labelId: z.string().describe("The ID of the label to retrieve")
-    },
-    async ({ labelId }) => {
-        try {
-            const label = await todoistApi.getLabel(labelId);
-            return { content: [{ type: "text", text: JSON.stringify({ label }, null, 2) }] };
-        } catch (error) {
-            console.error('Error fetching label:', error);
-            return {
-                content: [{ type: "text", text: "Failed to fetch label" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
     "createLabel",
     {
         description: "Create a new label for organizing tasks.",
         name: z.string().describe("The name of the label (required)"),
         color: z.string().optional().describe("Label color (e.g., 'red', 'blue', 'green')"),
-        order: z.number().optional().describe("Position in the label list"),
         isFavorite: z.boolean().optional().describe("Whether to mark as favorite")
     },
     async (params) => {
@@ -867,169 +309,13 @@ server.tool(
             const label = await todoistApi.addLabel({
                 name: params.name,
                 color: params.color,
-                order: params.order,
-                isFavorite: params.isFavorite,
+                isFavorite: params.isFavorite
             });
             return { content: [{ type: "text", text: JSON.stringify({ label }, null, 2) }] };
         } catch (error) {
             console.error('Error creating label:', error);
             return {
                 content: [{ type: "text", text: "Failed to create label" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "updateLabel",
-    {
-        description: "Update an existing label.",
-        labelId: z.string().describe("The ID of the label to update"),
-        name: z.string().optional().describe("New label name"),
-        color: z.string().optional().describe("New label color"),
-        order: z.number().optional().describe("New position in the label list"),
-        isFavorite: z.boolean().optional().describe("Whether to mark as favorite")
-    },
-    async (params) => {
-        try {
-            const { labelId, ...updateParams } = params;
-            const success = await todoistApi.updateLabel(labelId, updateParams);
-            return { content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }] };
-        } catch (error) {
-            console.error('Error updating label:', error);
-            return {
-                content: [{ type: "text", text: "Failed to update label" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "deleteLabel",
-    {
-        description: "Delete a label (it will be removed from all tasks that use it).",
-        labelId: z.string().describe("The ID of the label to delete")
-    },
-    async ({ labelId }) => {
-        try {
-            const success = await todoistApi.deleteLabel(labelId);
-            return { content: [{ type: "text", text: JSON.stringify({ success }, null, 2) }] };
-        } catch (error) {
-            console.error('Error deleting label:', error);
-            return {
-                content: [{ type: "text", text: "Failed to delete label" }],
-                isError: true
-            };
-        }
-    }
-);
-
-// Shared Labels
-server.tool(
-    "getSharedLabels",
-    {
-        description: "Get labels shared across team workspaces.",
-        omitPersonal: z.boolean().optional().describe("Whether to exclude personal labels from results")
-    },
-    async ({ omitPersonal }) => {
-        try {
-            const accessToken = await refreshTokenIfNeeded();
-            const url = new URL('https://api.todoist.com/rest/v2/labels/shared');
-            if (omitPersonal) {
-                url.searchParams.append('omit_personal', 'true');
-            }
-
-            const response = await fetch(url.toString(), {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to get shared labels: ${response.statusText}`);
-            }
-
-            const labels = await response.json();
-            return { content: [{ type: "text", text: JSON.stringify({ labels }, null, 2) }] };
-        } catch (error) {
-            console.error('Error getting shared labels:', error);
-            return {
-                content: [{ type: "text", text: "Failed to get shared labels" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "renameSharedLabel",
-    {
-        description: "Rename a shared label across team workspaces.",
-        name: z.string().describe("Current name of the shared label"),
-        newName: z.string().describe("New name for the shared label")
-    },
-    async ({ name, newName }) => {
-        try {
-            const accessToken = await refreshTokenIfNeeded();
-            const response = await fetch('https://api.todoist.com/rest/v2/labels/shared/rename', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: name,
-                    new_name: newName
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to rename shared label: ${response.statusText}`);
-            }
-
-            return { content: [{ type: "text", text: JSON.stringify({ success: true }, null, 2) }] };
-        } catch (error) {
-            console.error('Error renaming shared label:', error);
-            return {
-                content: [{ type: "text", text: "Failed to rename shared label" }],
-                isError: true
-            };
-        }
-    }
-);
-
-server.tool(
-    "removeSharedLabel",
-    {
-        description: "Remove a shared label from team workspaces.",
-        name: z.string().describe("Name of the shared label to remove")
-    },
-    async ({ name }) => {
-        try {
-            const accessToken = await refreshTokenIfNeeded();
-            const response = await fetch('https://api.todoist.com/rest/v2/labels/shared/remove', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: name
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to remove shared label: ${response.statusText}`);
-            }
-
-            return { content: [{ type: "text", text: JSON.stringify({ success: true }, null, 2) }] };
-        } catch (error) {
-            console.error('Error removing shared label:', error);
-            return {
-                content: [{ type: "text", text: "Failed to remove shared label" }],
                 isError: true
             };
         }
@@ -1043,9 +329,9 @@ async function main() {
     try {
         await initializeTodoistApi();
         await server.connect(transport);
-        console.error("Todoist MCP Server started with Nango authentication");
+        console.error("🚀 Todoist MCP Server started successfully with Nango authentication");
     } catch (error) {
-        console.error("Failed to start MCP server:", error);
+        console.error("❌ Failed to start MCP server:", error);
         process.exit(1);
     }
 }
