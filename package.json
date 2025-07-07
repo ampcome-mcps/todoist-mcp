@@ -4,21 +4,27 @@
   "description": "MCP server for Todoist API with Nango authentication",
   "main": "dist/server.js",
   "bin": {
-    "todoist-mcp-server": "./dist/server.js"
+    "todoist-mcp-server": "./dist/server.js",
+    "todoist-mcp": "./bin/todoist-mcp.js"
   },
   "files": [
-    "dist/**/*",
     "src/**/*",
+    "bin/**/*",
     "smithery.yaml",
     "tsconfig.json"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x dist/server.js && chmod +x bin/todoist-mcp.js",
+    "build:check": "tsc --noEmit",
     "prepublishOnly": "npm run build",
-    "postinstall": "npm run build",
+    "postinstall": "npm run build || echo 'Build failed, but continuing...'",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
-    "test": "node dist/server.js"
+    "test": "node test/test-server.js",
+    "test:npx": "node test/test-npx-simulation.js",
+    "test:real": "node dist/server.js",
+    "cli": "node bin/todoist-mcp.js",
+    "verify": "node verify.js"
   },
   "homepage": "https://github.com/stevengonsalvez/todoist-mcp",
   "repository": {
